@@ -1,4 +1,4 @@
-import { OptionContract, CalculationResult, UserInputs, StockData } from '../types';
+import { OptionContract, CalculationResult, UserInputs, StockData } from '../models/interfaces';
 
 /**
  * Solves for optimal leverage while using ALL available equity:

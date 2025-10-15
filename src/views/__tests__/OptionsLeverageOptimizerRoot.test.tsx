@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { OptionsLeverageOptimizerRoot } from '../OptionsLeverageOptimizerRoot';
-import { AppProvider } from '../../models/AppContext';
+import { AppProvider } from '../../controllers/AppContext';
 
 // Mock the child components
 vi.mock('../InputForm', () => ({

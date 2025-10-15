@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   Box,
   Typography,
@@ -17,54 +17,32 @@ import {
 } from '@mui/material';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
-import { useAppContext } from '../models/AppContext';
+import { AppContext } from '../controllers/AppContext';
 import { CalculationService } from '../controllers/calculationService';
 
 export const ResultsDisplay: React.FC = () => {
-  const { calculationResults, loading, error, optionsData, showResults } = useAppContext();
+  const appContext = useContext(AppContext)!;
+  const optimalResult = CalculationService.getOptimalContract(appContext.calculationResults);
 
-  // Don't show results until the button is clicked
-  if (!showResults) {
-    return null;
-  }
-
-  if (error) {
-    return (
-      <Alert severity="error" sx={{ mb: 3 }}>
-        {error}
-      </Alert>
-    );
-  }
-
-  if (loading) {
-    return (
-      <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-        <Typography>Loading options data...</Typography>
-      </Paper>
-    );
-  }
-
-  if (!optionsData) {
-    return (
-      <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
-        <Typography color="text.secondary">
-          Enter a stock symbol and click the magnifier to search
-        </Typography>
-      </Paper>
-    );
-  }
-
-  if (!calculationResults || calculationResults.length === 0) {
-    return (
-      <Alert severity="info" sx={{ mb: 3 }}>
-        No valid options found matching your criteria. Try adjusting the delta range or leverage.
-      </Alert>
-    );
-  }
-
-  const optimalResult = CalculationService.getOptimalContract(calculationResults);
-
-  return (
+  return !appContext.showResults ? null : appContext.error ? (
+    <Alert severity="error" sx={{ mb: 3 }}>
+      {appContext.error}
+    </Alert>
+  ) : appContext.loading ? (
+    <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
+      <Typography>Loading options data...</Typography>
+    </Paper>
+  ) : !appContext.optionsData ? (
+    <Paper elevation={2} sx={{ p: 3, textAlign: 'center' }}>
+      <Typography color="text.secondary">
+        Enter a stock symbol and click the magnifier to search
+      </Typography>
+    </Paper>
+  ) : !appContext.calculationResults || appContext.calculationResults.length === 0 ? (
+    <Alert severity="info" sx={{ mb: 3 }}>
+      No valid options found matching your criteria. Try adjusting the delta range or leverage.
+    </Alert>
+  ) : (
     <Box>
       {/* Optimal Contract Highlight */}
       {optimalResult && (
@@ -149,7 +127,7 @@ export const ResultsDisplay: React.FC = () => {
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             <TrendingUpIcon sx={{ mr: 1 }} />
             <Typography variant="h6" component="div">
-              All Valid Options ({calculationResults.length})
+              All Valid Options ({appContext.calculationResults.length})
             </Typography>
           </Box>
         </Box>
@@ -179,7 +157,7 @@ export const ResultsDisplay: React.FC = () => {
               </TableRow>
             </TableHead>
             <TableBody>
-              {calculationResults.map(result => {
+              {appContext.calculationResults.map(result => {
                 const isOptimal = result === optimalResult;
                 return (
                   <TableRow

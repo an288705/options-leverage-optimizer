@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { ReactNode } from 'react';
-import { AppProvider } from '../../models/AppContext';
+import { AppProvider } from '../AppContext';
 import { useOptionsController } from '../useOptionsController';
 import { ApiService } from '../apiService';
 

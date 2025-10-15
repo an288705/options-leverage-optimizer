@@ -1,8 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import { AppProvider, useAppContext } from '../AppContext';
+import { useContext } from 'react';
+import { AppProvider, AppContext } from '../AppContext';
 import { ReactNode } from 'react';
-import { UserInputs, OptionsChainData, CalculationResult } from '../../types';
+import { UserInputs, OptionsChainData, CalculationResult } from '../../models/interfaces';
 
 // Wrapper for testing
 const wrapper = ({ children }: { children: ReactNode }) => <AppProvider>{children}</AppProvider>;
@@ -10,7 +11,7 @@ const wrapper = ({ children }: { children: ReactNode }) => <AppProvider>{childre
 describe('AppContext', () => {
   describe('initialization', () => {
     it('should initialize with default user inputs', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       expect(result.current.userInputs).toBeDefined();
       expect(result.current.userInputs.totalEquity).toBe(10000);
@@ -22,25 +23,25 @@ describe('AppContext', () => {
     });
 
     it('should initialize with null options data', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       expect(result.current.optionsData).toBeNull();
     });
 
     it('should initialize with empty calculation results', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       expect(result.current.calculationResults).toEqual([]);
     });
 
     it('should initialize with loading false', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       expect(result.current.loading).toBe(false);
     });
 
     it('should initialize with null error', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       expect(result.current.error).toBeNull();
     });
@@ -48,7 +49,7 @@ describe('AppContext', () => {
 
   describe('setUserInputs', () => {
     it('should update all user inputs', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       const newInputs: UserInputs = {
         totalEquity: 20000,
@@ -69,7 +70,7 @@ describe('AppContext', () => {
 
   describe('updateUserInput', () => {
     it('should update a single input field', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('totalEquity', 15000);
@@ -81,7 +82,7 @@ describe('AppContext', () => {
     });
 
     it('should update stock symbol', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('stockSymbol', 'GOOGL');
@@ -91,7 +92,7 @@ describe('AppContext', () => {
     });
 
     it('should update desired shares', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('leverage', 1.5);
@@ -101,7 +102,7 @@ describe('AppContext', () => {
     });
 
     it('should update selected expiry', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('selectedExpiry', '2025-12-20');
@@ -111,7 +112,7 @@ describe('AppContext', () => {
     });
 
     it('should update delta min', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('deltaMin', 0.5);
@@ -121,7 +122,7 @@ describe('AppContext', () => {
     });
 
     it('should update delta max', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('deltaMax', 0.95);
@@ -133,7 +134,7 @@ describe('AppContext', () => {
 
   describe('setOptionsData', () => {
     it('should set options data', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       const mockOptionsData: OptionsChainData = {
         stock: {
@@ -162,7 +163,7 @@ describe('AppContext', () => {
     });
 
     it('should clear options data by setting to null', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       const mockOptionsData: OptionsChainData = {
         stock: {
@@ -190,7 +191,7 @@ describe('AppContext', () => {
 
   describe('setCalculationResults', () => {
     it('should set calculation results', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       const mockResults: CalculationResult[] = [
         {
@@ -217,7 +218,7 @@ describe('AppContext', () => {
     });
 
     it('should clear calculation results with empty array', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       const mockResults: CalculationResult[] = [
         {
@@ -252,7 +253,7 @@ describe('AppContext', () => {
 
   describe('setLoading', () => {
     it('should set loading to true', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.setLoading(true);
@@ -262,7 +263,7 @@ describe('AppContext', () => {
     });
 
     it('should set loading to false', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.setLoading(true);
@@ -278,7 +279,7 @@ describe('AppContext', () => {
 
   describe('setError', () => {
     it('should set error message', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       const errorMessage = 'Test error message';
 
@@ -290,7 +291,7 @@ describe('AppContext', () => {
     });
 
     it('should clear error by setting to null', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.setError('Error');
@@ -305,22 +306,16 @@ describe('AppContext', () => {
   });
 
   describe('context provider', () => {
-    it('should throw error when useAppContext is used outside provider', () => {
-      // Suppress console.error for this test
-      const consoleError = console.error;
-      console.error = () => {};
+    it('should return undefined when used outside provider', () => {
+      const { result } = renderHook(() => useContext(AppContext));
 
-      expect(() => {
-        renderHook(() => useAppContext());
-      }).toThrow('useAppContext must be used within an AppProvider');
-
-      console.error = consoleError;
+      expect(result.current).toBeUndefined();
     });
   });
 
   describe('state persistence', () => {
     it('should maintain state across multiple updates', () => {
-      const { result } = renderHook(() => useAppContext(), { wrapper });
+      const { result } = renderHook(() => useContext(AppContext)!, { wrapper });
 
       act(() => {
         result.current.updateUserInput('totalEquity', 15000);

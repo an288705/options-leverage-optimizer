@@ -1,5 +1,5 @@
-import { useCallback } from 'react';
-import { useAppContext } from '../models/AppContext';
+import { useCallback, useContext } from 'react';
+import { AppContext } from './AppContext';
 import { ApiService } from './apiService';
 import { CalculationService } from './calculationService';
 
@@ -8,39 +8,38 @@ import { CalculationService } from './calculationService';
  * This follows the Controller pattern in MVC architecture
  */
 export const useOptionsController = () => {
-  const { userInputs, setOptionsData, setCalculationResults, setLoading, setError } =
-    useAppContext();
+  const appContext = useContext(AppContext)!;
 
   /**
    * Fetch options data and calculate results
    */
   const fetchAndCalculate = useCallback(async () => {
-    setLoading(true);
-    setError(null);
+    appContext.setLoading(true);
+    appContext.setError(null);
 
     try {
       // Validate inputs
-      if (!userInputs.stockSymbol) {
+      if (!appContext.userInputs.stockSymbol) {
         throw new Error('Please enter a stock symbol');
       }
 
-      if (userInputs.totalEquity <= 0) {
+      if (appContext.userInputs.totalEquity <= 0) {
         throw new Error('Total equity must be greater than 0');
       }
 
-      if (userInputs.leverage <= 0) {
+      if (appContext.userInputs.leverage <= 0) {
         throw new Error('Leverage must be greater than 0');
       }
 
       // Fetch options chain data
-      const data = await ApiService.fetchOptionsChain(userInputs.stockSymbol);
-      setOptionsData(data);
+      const data = await ApiService.fetchOptionsChain(appContext.userInputs.stockSymbol);
+      appContext.setOptionsData(data);
 
       // If no expiry is selected, select the first one
-      if (!userInputs.selectedExpiry && data.expiryDates.length > 0) {
+      if (!appContext.userInputs.selectedExpiry && data.expiryDates.length > 0) {
         // Don't calculate yet, just set the data
-        setCalculationResults([]);
-        setLoading(false);
+        appContext.setCalculationResults([]);
+        appContext.setLoading(false);
         return;
       }
 
@@ -48,17 +47,17 @@ export const useOptionsController = () => {
       const results = CalculationService.calculateAllOptions(
         data.contracts,
         data.stock,
-        userInputs
+        appContext.userInputs
       );
 
-      setCalculationResults(results);
-      setLoading(false);
+      appContext.setCalculationResults(results);
+      appContext.setLoading(false);
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
-      setError(errorMessage);
-      setLoading(false);
+      appContext.setError(errorMessage);
+      appContext.setLoading(false);
     }
-  }, [userInputs, setOptionsData, setCalculationResults, setLoading, setError]);
+  }, [appContext]);
 
   /**
    * Recalculate with current data (when user changes inputs)
@@ -68,26 +67,26 @@ export const useOptionsController = () => {
       if (!optionsData) return;
 
       try {
-        setError(null);
+        appContext.setError(null);
 
-        if (!userInputs.selectedExpiry) {
-          setCalculationResults([]);
+        if (!appContext.userInputs.selectedExpiry) {
+          appContext.setCalculationResults([]);
           return;
         }
 
         const results = CalculationService.calculateAllOptions(
           optionsData.contracts,
           optionsData.stock,
-          userInputs
+          appContext.userInputs
         );
 
-        setCalculationResults(results);
+        appContext.setCalculationResults(results);
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Calculation error';
-        setError(errorMessage);
+        appContext.setError(errorMessage);
       }
     },
-    [userInputs, setCalculationResults, setError]
+    [appContext]
   );
 
   return {

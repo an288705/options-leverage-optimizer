@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useContext } from 'react';
 import {
   Box,
   TextField,
@@ -13,40 +13,13 @@ import {
   Divider,
 } from '@mui/material';
 import SearchIcon from '@mui/icons-material/Search';
-import { useAppContext } from '../models/AppContext';
+import { AppContext } from '../controllers/AppContext';
 import { useOptionsController } from '../controllers/useOptionsController';
+import * as utils from '../controllers/utils';
 
 export const InputForm: React.FC = () => {
-  const { userInputs, updateUserInput, optionsData, loading, setShowResults } = useAppContext();
-
+  const appContext = useContext(AppContext)!;
   const { fetchAndCalculate, recalculate } = useOptionsController();
-
-  const handleShowResults = () => {
-    console.log('handleShowResults called', {
-      hasOptionsData: !!optionsData,
-      selectedExpiry: userInputs.selectedExpiry,
-      leverage: userInputs.leverage,
-      totalEquity: userInputs.totalEquity,
-    });
-
-    if (optionsData && userInputs.selectedExpiry) {
-      recalculate(optionsData);
-      setShowResults(true);
-    } else {
-      console.warn('Cannot show results: missing data or expiry');
-    }
-  };
-
-  const handleFetchData = () => {
-    setShowResults(false); // Hide results when fetching new data
-    fetchAndCalculate();
-  };
-
-  const handleSymbolKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleFetchData();
-    }
-  };
 
   return (
     <Paper elevation={3} sx={{ p: 3, mb: 3 }}>
@@ -60,18 +33,20 @@ export const InputForm: React.FC = () => {
           <TextField
             fullWidth
             label="Stock Symbol"
-            value={userInputs.stockSymbol}
-            onChange={e => updateUserInput('stockSymbol', e.target.value.toUpperCase())}
-            onKeyPress={handleSymbolKeyPress}
-            disabled={loading}
+            value={appContext.userInputs.stockSymbol}
+            onChange={e => appContext.updateUserInput('stockSymbol', e.target.value.toUpperCase())}
+            onKeyPress={e =>
+              e.key === 'Enter' && utils.handleFetchData(appContext, fetchAndCalculate)
+            }
+            disabled={appContext.loading}
             InputProps={{
               endAdornment: (
                 <InputAdornment position="end">
                   <Tooltip title="Search for stock">
                     <span>
                       <IconButton
-                        onClick={handleFetchData}
-                        disabled={loading || !userInputs.stockSymbol}
+                        onClick={() => utils.handleFetchData(appContext, fetchAndCalculate)}
+                        disabled={appContext.loading || !appContext.userInputs.stockSymbol}
                         edge="end"
                         color="primary"
                       >
@@ -83,7 +58,7 @@ export const InputForm: React.FC = () => {
               ),
             }}
             helperText={
-              loading
+              appContext.loading
                 ? 'Loading options data...'
                 : 'Enter ticker symbol and click the magnifier to search'
             }
@@ -91,7 +66,7 @@ export const InputForm: React.FC = () => {
         </Grid>
 
         {/* Show additional fields only after data has been fetched */}
-        {optionsData && (
+        {appContext.optionsData && (
           <>
             {/* Divider */}
             <Grid item xs={12}>
@@ -102,8 +77,8 @@ export const InputForm: React.FC = () => {
             <Grid item xs={12}>
               <Box sx={{ p: 2, bgcolor: 'primary.50', borderRadius: 1 }}>
                 <Typography variant="body1">
-                  <strong>{optionsData.stock.symbol}</strong> Current Price:{' '}
-                  <strong>${optionsData.stock.price.toFixed(2)}</strong>
+                  <strong>{appContext.optionsData.stock.symbol}</strong> Current Price:{' '}
+                  <strong>${appContext.optionsData.stock.price.toFixed(2)}</strong>
                 </Typography>
               </Box>
             </Grid>
@@ -114,12 +89,12 @@ export const InputForm: React.FC = () => {
                 fullWidth
                 select
                 label="Expiry Date"
-                value={userInputs.selectedExpiry}
-                onChange={e => updateUserInput('selectedExpiry', e.target.value)}
-                disabled={loading}
+                value={appContext.userInputs.selectedExpiry}
+                onChange={e => appContext.updateUserInput('selectedExpiry', e.target.value)}
+                disabled={appContext.loading}
                 helperText="Select option expiration date"
               >
-                {optionsData.expiryDates.map(date => (
+                {appContext.optionsData.expiryDates.map(date => (
                   <MenuItem key={date} value={date}>
                     {new Date(date).toLocaleDateString('en-US', {
                       year: 'numeric',
@@ -137,12 +112,14 @@ export const InputForm: React.FC = () => {
                 fullWidth
                 label="Total Equity (T)"
                 type="number"
-                value={userInputs.totalEquity === 0 ? '' : userInputs.totalEquity}
+                value={
+                  appContext.userInputs.totalEquity === 0 ? '' : appContext.userInputs.totalEquity
+                }
                 onChange={e => {
                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                  updateUserInput('totalEquity', isNaN(value) ? 0 : value);
+                  appContext.updateUserInput('totalEquity', isNaN(value) ? 0 : value);
                 }}
-                disabled={loading}
+                disabled={appContext.loading}
                 InputProps={{
                   startAdornment: <InputAdornment position="start">$</InputAdornment>,
                 }}
@@ -166,12 +143,12 @@ export const InputForm: React.FC = () => {
                 fullWidth
                 label="Leverage (L)"
                 type="number"
-                value={userInputs.leverage === 0 ? '' : userInputs.leverage}
+                value={appContext.userInputs.leverage === 0 ? '' : appContext.userInputs.leverage}
                 onChange={e => {
                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                  updateUserInput('leverage', isNaN(value) ? 0 : value);
+                  appContext.updateUserInput('leverage', isNaN(value) ? 0 : value);
                 }}
-                disabled={loading}
+                disabled={appContext.loading}
                 helperText="Leverage ratio"
                 sx={{
                   '& input[type=number]::-webkit-outer-spin-button, & input[type=number]::-webkit-inner-spin-button':
@@ -192,12 +169,12 @@ export const InputForm: React.FC = () => {
                 fullWidth
                 label="Min Delta"
                 type="number"
-                value={userInputs.deltaMin === 0 ? '' : userInputs.deltaMin}
+                value={appContext.userInputs.deltaMin === 0 ? '' : appContext.userInputs.deltaMin}
                 onChange={e => {
                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                  updateUserInput('deltaMin', isNaN(value) ? 0 : value);
+                  appContext.updateUserInput('deltaMin', isNaN(value) ? 0 : value);
                 }}
-                disabled={loading}
+                disabled={appContext.loading}
                 inputProps={{ min: 0, max: 1, step: 0.05 }}
                 helperText="Min delta"
                 sx={{
@@ -219,12 +196,12 @@ export const InputForm: React.FC = () => {
                 fullWidth
                 label="Max Delta"
                 type="number"
-                value={userInputs.deltaMax === 0 ? '' : userInputs.deltaMax}
+                value={appContext.userInputs.deltaMax === 0 ? '' : appContext.userInputs.deltaMax}
                 onChange={e => {
                   const value = e.target.value === '' ? 0 : parseFloat(e.target.value);
-                  updateUserInput('deltaMax', isNaN(value) ? 0 : value);
+                  appContext.updateUserInput('deltaMax', isNaN(value) ? 0 : value);
                 }}
-                disabled={loading}
+                disabled={appContext.loading}
                 inputProps={{ min: 0, max: 1, step: 0.05 }}
                 helperText="Max delta"
                 sx={{
@@ -245,10 +222,10 @@ export const InputForm: React.FC = () => {
               <Button
                 fullWidth
                 variant="contained"
-                color="secondary"
+                color="primary"
                 size="large"
-                onClick={handleShowResults}
-                disabled={loading || !userInputs.selectedExpiry}
+                onClick={() => utils.handleShowResults(appContext, recalculate)}
+                disabled={appContext.loading || !appContext.userInputs.selectedExpiry}
                 sx={{ height: 56, mt: 2 }}
               >
                 Show Optimal Number of Call Contracts

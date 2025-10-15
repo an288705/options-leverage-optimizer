@@ -1,6 +1,6 @@
 import React from 'react';
 import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
-import { AppProvider } from './models/AppContext';
+import { AppProvider } from './controllers/AppContext';
 import { OptionsLeverageOptimizerRoot } from './views/OptionsLeverageOptimizerRoot';
 
 // Create Material UI theme

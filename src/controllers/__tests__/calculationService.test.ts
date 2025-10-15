@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { CalculationService } from '../calculationService';
-import { OptionContract, StockData, UserInputs } from '../../types';
+import { OptionContract, StockData, UserInputs } from '../../models/interfaces';
 
 describe('CalculationService', () => {
   const mockStockData: StockData = {

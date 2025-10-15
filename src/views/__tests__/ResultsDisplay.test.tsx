@@ -1,9 +1,9 @@
 import { describe, it, expect } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { ResultsDisplay } from '../ResultsDisplay';
-import { AppProvider, useAppContext } from '../../models/AppContext';
-import { CalculationResult, OptionsChainData } from '../../types';
-import { ReactNode } from 'react';
+import { AppProvider, AppContext } from '../../controllers/AppContext';
+import { CalculationResult, OptionsChainData } from '../../models/interfaces';
+import { ReactNode, useContext } from 'react';
 
 // Custom wrapper to set context state
 const CustomProvider = ({
@@ -45,7 +45,7 @@ const TestWrapper = ({
   calculationResults,
   showResults,
 }: any) => {
-  const context = useAppContext();
+  const context = useContext(AppContext)!;
 
   // Set state on mount
   if (loading !== undefined) context.setLoading(loading);

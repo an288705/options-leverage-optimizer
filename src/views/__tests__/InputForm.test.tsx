@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { InputForm } from '../InputForm';
-import { AppProvider } from '../../models/AppContext';
+import { AppProvider } from '../../controllers/AppContext';
 import { ThemeProvider, createTheme } from '@mui/material';
 
 // Mock the controller hook

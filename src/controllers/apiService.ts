@@ -1,29 +1,172 @@
-import { OptionsChainData, StockData, OptionContract } from '../types';
+import axios, { AxiosInstance } from 'axios';
+import { OptionsChainData, StockData, OptionContract } from '../models/interfaces';
 
 /**
- * API Service for fetching stock and options data
+ * API Service for fetching stock and options data from Tradier
  *
- * Note: This implementation uses mock data for demonstration.
- * In production, you can integrate with real APIs like:
- * - Polygon.io
- * - Alpha Vantage
- * - Tradier
- * - Yahoo Finance
- * - Other market data providers
+ * Tradier offers:
+ * - Free sandbox account for testing (https://developer.tradier.com)
+ * - Production API with real-time data (requires brokerage account)
  *
- * Interactive Brokers API requires IBKR Pro account.
+ * Configuration via environment variables (.env file):
+ * - VITE_TRADIER_API_TOKEN: Your Tradier API token
+ * - VITE_TRADIER_API_BASE_URL: Sandbox or production URL
+ * - VITE_USE_MOCK_DATA: 'true' for mock mode, 'false' for real API
+ * - VITE_API_TIMEOUT: Request timeout in milliseconds
  */
 export class ApiService {
-  private static readonly API_DELAY = 1000; // Simulate network delay
+  private static readonly USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true';
+  private static readonly API_BASE_URL =
+    import.meta.env.VITE_TRADIER_API_BASE_URL || 'https://sandbox.tradier.com';
+  private static readonly API_TOKEN = import.meta.env.VITE_TRADIER_API_TOKEN;
+  private static readonly API_TIMEOUT = parseInt(import.meta.env.VITE_API_TIMEOUT || '10000');
+  private static readonly MOCK_API_DELAY = 1000;
+
+  private static axiosInstance: AxiosInstance | null = null;
+
+  /**
+   * Get or create axios instance with Tradier API configuration
+   */
+  private static getAxiosInstance(): AxiosInstance {
+    if (!this.axiosInstance) {
+      this.axiosInstance = axios.create({
+        baseURL: this.API_BASE_URL,
+        timeout: this.API_TIMEOUT,
+        headers: {
+          Authorization: `Bearer ${this.API_TOKEN}`,
+          Accept: 'application/json',
+        },
+      });
+
+      // Add response interceptor for error handling
+      this.axiosInstance.interceptors.response.use(
+        response => response,
+        error => {
+          console.error('Tradier API Error:', error.message);
+          if (error.response) {
+            console.error('Response data:', error.response.data);
+            console.error('Response status:', error.response.status);
+          }
+          throw error;
+        }
+      );
+    }
+    return this.axiosInstance;
+  }
 
   /**
    * Fetch options chain data for a given stock symbol
    */
   static async fetchOptionsChain(symbol: string): Promise<OptionsChainData> {
-    console.log(`[MOCK MODE] Fetching options chain for ${symbol}`);
+    if (this.USE_MOCK_DATA) {
+      console.log(`[MOCK MODE] Fetching options chain for ${symbol}`);
+      return this.fetchMockOptionsChain(symbol);
+    }
 
+    try {
+      console.log(`[TRADIER API] Fetching options chain for ${symbol}`);
+      return await this.fetchRealOptionsChain(symbol);
+    } catch (error) {
+      console.error('Failed to fetch from Tradier API, falling back to mock data:', error);
+      return this.fetchMockOptionsChain(symbol);
+    }
+  }
+
+  /**
+   * Fetch real options chain data from Tradier API
+   */
+  private static async fetchRealOptionsChain(symbol: string): Promise<OptionsChainData> {
+    const api = this.getAxiosInstance();
+
+    // Step 1: Get current stock price
+    const quoteResponse = await api.get(`/v1/markets/quotes`, {
+      params: { symbols: symbol.toUpperCase(), greeks: false },
+    });
+
+    const quoteData = quoteResponse.data.quotes?.quote;
+    if (!quoteData || !quoteData.last) {
+      throw new Error(`No quote data found for symbol: ${symbol}`);
+    }
+
+    const stockPrice = parseFloat(quoteData.last);
+    const stock: StockData = {
+      symbol: symbol.toUpperCase(),
+      price: stockPrice,
+      timestamp: new Date().toISOString(),
+    };
+
+    // Step 2: Get option expiration dates
+    const expirationsResponse = await api.get(`/v1/markets/options/expirations`, {
+      params: { symbol: symbol.toUpperCase(), includeAllRoots: true, strikes: false },
+    });
+
+    const expiryDates: string[] = expirationsResponse.data.expirations?.date || [];
+
+    if (expiryDates.length === 0) {
+      throw new Error(`No option expirations found for symbol: ${symbol}`);
+    }
+
+    // Step 3: Fetch options chains for the first 6 expiries
+    const contracts: OptionContract[] = [];
+    const expiryLimit = Math.min(6, expiryDates.length);
+
+    for (let i = 0; i < expiryLimit; i++) {
+      const expiry = expiryDates[i];
+
+      try {
+        const chainResponse = await api.get(`/v1/markets/options/chains`, {
+          params: {
+            symbol: symbol.toUpperCase(),
+            expiration: expiry,
+            greeks: true, // Include Greeks (delta, gamma, etc.)
+          },
+        });
+
+        const options = chainResponse.data.options?.option || [];
+
+        // Filter for call options only
+        const calls = Array.isArray(options) ? options : [options];
+
+        calls.forEach((option: any) => {
+          if (option.option_type === 'call' && option.greeks) {
+            const premium = parseFloat(option.last) || parseFloat(option.bid + option.ask) / 2 || 0;
+            const delta = parseFloat(option.greeks.delta) || 0;
+            const strike = parseFloat(option.strike);
+
+            if (premium > 0 && delta > 0 && strike > 0) {
+              contracts.push({
+                strike,
+                expiry,
+                premium,
+                delta: Math.abs(delta), // Ensure positive delta for calls
+                symbol: option.symbol,
+                type: 'call',
+              });
+            }
+          }
+        });
+      } catch (error) {
+        console.warn(`Failed to fetch options chain for expiry ${expiry}:`, error);
+      }
+    }
+
+    if (contracts.length === 0) {
+      throw new Error(`No valid call options found for symbol: ${symbol}`);
+    }
+
+    return {
+      stock,
+      expiryDates: expiryDates.slice(0, expiryLimit),
+      contracts,
+    };
+  }
+
+  /**
+   * Fetch mock options chain data (for development)
+   */
+  private static async fetchMockOptionsChain(symbol: string): Promise<OptionsChainData> {
     // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, this.API_DELAY));
+    await new Promise(resolve => setTimeout(resolve, this.MOCK_API_DELAY));
 
     // Generate mock data
     return this.generateMockData(symbol);
@@ -31,7 +174,6 @@ export class ApiService {
 
   /**
    * Generate mock options chain data
-   * In production, replace this with actual API integration
    */
   private static generateMockData(symbol: string): OptionsChainData {
     // Mock stock prices for common symbols
