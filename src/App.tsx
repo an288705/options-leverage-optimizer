@@ -3,7 +3,7 @@ import { ThemeProvider, createTheme, CssBaseline } from '@mui/material';
 import { AppProvider } from './controllers/AppContext';
 import { OptionsLeverageOptimizerRoot } from './views/OptionsLeverageOptimizerRoot';
 
-// Create Material UI themes
+// Create Material UI theme
 const theme = createTheme({
   palette: {
     primary: {
